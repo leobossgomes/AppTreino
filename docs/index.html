@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>AppTreino</title>
+  <meta name="description" content="Controle seus treinos de academia: exercícios, séries, peso e histórico.">
+
+  <!-- Faz o app abrir em tela cheia quando adicionado à Tela de Início do iPhone -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="AppTreino">
+  <meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icones/apple-touch-icon.png">
+  <link rel="icon" href="icones/favicon-32.png" sizes="32x32">
+  <link rel="stylesheet" href="css/estilo.css">
+</head>
+<body>
+
+  <header class="topo">
+    <h1 id="titulo">Treinar</h1>
+    <div id="acao"></div>
+  </header>
+
+  <main id="tela"></main>
+
+  <nav id="abas" class="abas" aria-label="Abas do app"></nav>
+
+  <div id="fundo-modal" class="fundo-modal" hidden></div>
+
+  <!-- A ordem importa: cada arquivo usa os anteriores. -->
+  <script src="js/formatar.js"></script>
+  <script src="js/dados.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/treinar.js"></script>
+  <script src="js/historico.js"></script>
+  <script src="js/exercicios.js"></script>
+  <script src="js/progresso.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
