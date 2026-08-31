@@ -1,0 +1,69 @@
+# Compila o AppTreino em um Mac na nuvem (grátis para repositórios públicos).
+# Serve para quem desenvolve no Windows: você não precisa de um Mac para saber
+# se o código está correto — o GitHub compila para você a cada push.
+
+name: Compilar app
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  compilar:
+    name: Compilar para o simulador
+    runs-on: macos-latest
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Mostrar versão do Xcode
+        run: xcodebuild -version
+
+      - name: Compilar
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project AppTreino.xcodeproj \
+            -scheme AppTreino \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO
+
+  ipa:
+    name: Gerar .ipa (sem assinatura)
+    runs-on: macos-latest
+    needs: compilar
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Gerar o archive sem assinatura
+        run: |
+          set -o pipefail
+          xcodebuild archive \
+            -project AppTreino.xcodeproj \
+            -scheme AppTreino \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/AppTreino.xcarchive" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGN_ENTITLEMENTS=""
+
+      - name: Empacotar em .ipa
+        run: |
+          mkdir -p "$RUNNER_TEMP/Payload"
+          cp -R "$RUNNER_TEMP/AppTreino.xcarchive/Products/Applications/AppTreino.app" "$RUNNER_TEMP/Payload/"
+          cd "$RUNNER_TEMP"
+          zip -qry AppTreino.ipa Payload
+          ls -lh AppTreino.ipa
+
+      - name: Publicar o .ipa como artefato
+        uses: actions/upload-artifact@v4
+        with:
+          name: AppTreino-sem-assinatura
+          path: ${{ runner.temp }}/AppTreino.ipa
+          retention-days: 30
