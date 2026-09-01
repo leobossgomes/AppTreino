@@ -105,40 +105,62 @@ const TelaTreinar = {
   },
 
   blocoExercicio(treino, exercicio) {
+    /* Cardio se anota em minutos; o resto, em peso × repetições. */
+    const cardio = Dados.ehCardio(exercicio);
+
+    const cabecalho = [UI.el('span', { texto: 'Série' })];
+    if (cardio) {
+      cabecalho.push(UI.el('span', { texto: 'Minutos' }));
+    } else {
+      cabecalho.push(UI.el('span', { texto: 'Peso (kg)' }));
+      cabecalho.push(UI.el('span', { texto: 'Reps' }));
+    }
+    cabecalho.push(UI.el('span', { texto: 'Ok', style: 'text-align:center' }));
+
+    const classeLinha = 'linha-serie' + (cardio ? ' cardio' : '');
+
     const linhas = [
-      UI.el('div', { class: 'linha-cabecalho' }, [
-        UI.el('span', { texto: 'Série' }),
-        UI.el('span', { texto: 'Peso (kg)' }),
-        UI.el('span', { texto: 'Reps' }),
-        UI.el('span', { texto: 'Ok', style: 'text-align:center' })
-      ])
+      UI.el('div', { class: 'linha-cabecalho' + (cardio ? ' cardio' : '') }, cabecalho)
     ];
 
     exercicio.series.forEach((serie, indice) => {
-      linhas.push(UI.el('div', { class: 'linha-serie' + (serie.feita ? ' feita' : '') }, [
+      linhas.push(UI.el('div', { class: classeLinha + (serie.feita ? ' feita' : '') }, [
         UI.el('span', { class: 'num', texto: String(indice + 1) }),
 
-        UI.el('input', {
-          type: 'text', inputmode: 'decimal', value: serie.peso,
-          'aria-label': 'Peso da série ' + (indice + 1),
-          onfocus: (e) => e.target.select(),
-          oninput: (e) => {
-            serie.peso = Formatar.numero(e.target.value);
-            Dados.salvar();
-            App.atualizarResumo();
-          }
-        }),
+        ...(cardio ? [
+          UI.el('input', {
+            type: 'text', inputmode: 'numeric', value: Dados.minutosDaSerie(serie),
+            'aria-label': 'Minutos da série ' + (indice + 1),
+            onfocus: (e) => e.target.select(),
+            oninput: (e) => {
+              serie.minutos = Math.max(0, Math.round(Formatar.numero(e.target.value)));
+              Dados.salvar();
+              App.atualizarResumo();
+            }
+          })
+        ] : [
+          UI.el('input', {
+            type: 'text', inputmode: 'decimal', value: serie.peso,
+            'aria-label': 'Peso da série ' + (indice + 1),
+            onfocus: (e) => e.target.select(),
+            oninput: (e) => {
+              serie.peso = Formatar.numero(e.target.value);
+              Dados.salvar();
+              App.atualizarResumo();
+            }
+          }),
 
-        UI.el('input', {
-          type: 'text', inputmode: 'numeric', value: serie.reps,
-          'aria-label': 'Repetições da série ' + (indice + 1),
-          onfocus: (e) => e.target.select(),
-          oninput: (e) => {
-            serie.reps = Math.round(Formatar.numero(e.target.value));
-            Dados.salvar();
-            App.atualizarResumo();
-          }
-        }),
+          UI.el('input', {
+            type: 'text', inputmode: 'numeric', value: serie.reps,
+            'aria-label': 'Repetições da série ' + (indice + 1),
+            onfocus: (e) => e.target.select(),
+            oninput: (e) => {
+              serie.reps = Math.round(Formatar.numero(e.target.value));
+              Dados.salvar();
+              App.atualizarResumo();
+            }
+          })
+        ]),
 
         UI.el('button', {
           class: 'marcar' + (serie.feita ? ' ativo' : ''),
@@ -146,7 +168,7 @@ const TelaTreinar = {
           onclick: () => {
             serie.feita = !serie.feita;
             Dados.salvar();
-            App.render();
+            App.renderNoLugar();
           }
         }, '✓')
       ]));
@@ -155,10 +177,19 @@ const TelaTreinar = {
     linhas.push(UI.el('button', {
       class: 'item',
       style: 'color:var(--azul)',
-      onclick: () => { Dados.adicionarSerie(exercicio); App.render(); }
-    }, '+  Adicionar série'));
+      onclick: () => { Dados.adicionarSerie(exercicio); App.renderNoLugar(); }
+    }, cardio ? '+  Adicionar tempo' : '+  Adicionar série'));
 
+    const feitas = exercicio.series.filter((s) => s.feita).length;
     const volume = Dados.volumeExercicio(exercicio);
+    const minutos = Dados.minutosExercicio(exercicio);
+
+    const rodape = cardio
+      ? (minutos > 0 ? Formatar.minutos(minutos) + ' de cardio' : null)
+      : (volume > 0
+          ? Formatar.plural(feitas, 'série concluída', 'séries concluídas')
+            + ' • volume ' + Formatar.volume(volume)
+          : null);
 
     return UI.grupoDeElementos([
       UI.el('div', { class: 'exercicio-topo' }, [
@@ -172,24 +203,26 @@ const TelaTreinar = {
         }, '⋯')
       ]),
       UI.el('div', { class: 'grupo' }, linhas),
-      volume > 0 ? UI.el('div', { class: 'secao-rodape',
-        texto: Formatar.plural(exercicio.series.filter((s) => s.feita).length, 'série concluída', 'séries concluídas')
-             + ' • volume ' + Formatar.volume(volume)
-      }) : null
+      rodape ? UI.el('div', { class: 'secao-rodape', texto: rodape }) : null
     ]);
   },
 
   menuExercicio(treino, exercicio) {
+    const cardio = Dados.ehCardio(exercicio);
+
     const acoes = [
-      { texto: 'Adicionar série', aoTocar: () => { Dados.adicionarSerie(exercicio); App.render(); } }
+      {
+        texto: cardio ? 'Adicionar tempo' : 'Adicionar série',
+        aoTocar: () => { Dados.adicionarSerie(exercicio); App.renderNoLugar(); }
+      }
     ];
 
     if (exercicio.series.length > 1) {
       acoes.push({
-        texto: 'Remover última série',
+        texto: cardio ? 'Remover último tempo' : 'Remover última série',
         aoTocar: () => {
           Dados.removerSerie(exercicio, exercicio.series[exercicio.series.length - 1].id);
-          App.render();
+          App.renderNoLugar();
         }
       });
     }
@@ -197,7 +230,7 @@ const TelaTreinar = {
     acoes.push({
       texto: 'Remover exercício',
       perigo: true,
-      aoTocar: () => { Dados.removerExercicio(treino, exercicio.id); App.render(); }
+      aoTocar: () => { Dados.removerExercicio(treino, exercicio.id); App.renderNoLugar(); }
     });
 
     UI.menu(exercicio.nome, acoes);
@@ -215,7 +248,7 @@ const TelaTreinar = {
     const escolher = (nome, grupo) => {
       UI.fecharModal();
       Dados.adicionarExercicio(treino, nome, grupo);
-      App.render();
+      App.renderNoLugar();
     };
 
     function desenhar(filtro = '') {
@@ -234,7 +267,7 @@ const TelaTreinar = {
             UI.fecharModal();
             TelaExercicios.editar(null, filtro.trim(), (criado) => {
               Dados.adicionarExercicio(treino, criado.nome, criado.grupo);
-              App.render();
+              App.renderNoLugar();
             });
           }
         }));

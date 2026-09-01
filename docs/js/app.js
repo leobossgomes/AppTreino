@@ -65,6 +65,16 @@ const App = {
     window.scrollTo(0, 0);
   },
 
+  /** Redesenha sem tirar o usuário do lugar onde ele estava.
+      É o que usamos nas ações que acontecem no meio da tela — marcar uma
+      série como feita, adicionar um exercício ou uma série — para a tela
+      não pular para o topo no meio do treino. */
+  renderNoLugar() {
+    const posicao = window.scrollY;
+    this.renderConteudo();
+    window.scrollTo(0, posicao);
+  },
+
   /** Redesenha só o conteúdo, mantendo a posição da rolagem
       (usado enquanto o usuário digita numa busca). */
   renderConteudo() {
@@ -126,10 +136,17 @@ const App = {
     if (!treino || !alvo) return;
 
     const volume = Dados.volumeTreino(treino);
+    const minutos = Dados.minutosTreino(treino);
+
+    const detalhes = [
+      volume > 0 ? Formatar.volume(volume) + ' de volume' : null,
+      minutos > 0 ? Formatar.minutos(minutos) + ' de cardio' : null
+    ].filter(Boolean);
+
     alvo.textContent =
       Formatar.plural(treino.exercicios.length, 'exercício', 'exercícios')
       + ' • ' + Formatar.plural(Dados.seriesFeitas(treino), 'série', 'séries')
-      + (volume > 0 ? `\n${Formatar.volume(volume)} de volume` : '');
+      + (detalhes.length ? '\n' + detalhes.join(' • ') : '');
   },
 
   // ---------- Funcionar sem internet ----------

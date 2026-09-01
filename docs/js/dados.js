@@ -12,6 +12,9 @@
          exercicios: [ { id, nome, grupo, series: [ { id, reps, peso, feita } ] } ] }
      ]
    }
+
+   Nos exercícios do grupo "Cardio" a série guarda `minutos` no lugar de
+   peso e repetições — esteira e bicicleta se medem em tempo, não em carga.
    ========================================================================== */
 
 const Dados = (function () {
@@ -19,6 +22,12 @@ const Dados = (function () {
   const CHAVE = 'apptreino.dados.v1';
 
   const GRUPOS = ['Peito', 'Costas', 'Pernas', 'Ombros', 'Bíceps', 'Tríceps', 'Abdômen', 'Cardio', 'Outro'];
+
+  /** Grupo cujos exercícios são anotados em minutos, e não em peso × reps. */
+  const GRUPO_CARDIO = 'Cardio';
+
+  const REPS_PADRAO = 10;
+  const MINUTOS_PADRAO = 20;
 
   const EMOJI_GRUPO = {
     'Peito': '🫁', 'Costas': '🔙', 'Pernas': '🦵', 'Ombros': '🤸',
@@ -78,6 +87,8 @@ const Dados = (function () {
       }));
       salvar();
     }
+
+    migrarCardioParaMinutos();
     return estado;
   }
 
@@ -89,6 +100,51 @@ const Dados = (function () {
       console.error('Não consegui salvar:', erro);
       return false;
     }
+  }
+
+  // ---------- Cardio (anotado em minutos) ----------
+
+  /** Este exercício é de cardio? (esteira, bicicleta, elíptico...) */
+  function ehCardio(exercicio) {
+    return !!exercicio && exercicio.grupo === GRUPO_CARDIO;
+  }
+
+  /** Descobre pelo nome se um exercício é de cardio. Vale o que está no
+      histórico (é dele que saem os números das telas); se o exercício nunca
+      foi treinado, vale o grupo do catálogo. */
+  function ehCardioPorNome(nome) {
+    for (const treino of finalizados()) {
+      const achado = treino.exercicios.find((e) => e.nome === nome);
+      if (achado) return ehCardio(achado);
+    }
+
+    const doCatalogo = estado.exercicios.find((e) => e.nome === nome);
+    return !!doCatalogo && doCatalogo.grupo === GRUPO_CARDIO;
+  }
+
+  /** Minutos de uma série, tolerando séries antigas sem o campo. */
+  function minutosDaSerie(serie) {
+    return Math.max(0, Math.round(Number(serie && serie.minutos) || 0));
+  }
+
+  /* Antes desta versão o cardio também era anotado como peso × repetições.
+     O tempo só podia ter sido digitado no campo de repetições, então é ele
+     que vira os minutos. Nada é apagado: o valor antigo continua em `reps`. */
+  function migrarCardioParaMinutos() {
+    let mudou = false;
+
+    estado.treinos.forEach((treino) => {
+      (treino.exercicios || []).forEach((exercicio) => {
+        if (!ehCardio(exercicio)) return;
+        (exercicio.series || []).forEach((serie) => {
+          if (typeof serie.minutos === 'number') return;
+          serie.minutos = Math.max(0, Math.round(Number(serie.reps) || 0));
+          mudou = true;
+        });
+      });
+    });
+
+    if (mudou) salvar();
   }
 
   // ---------- Catálogo de exercícios ----------
@@ -155,7 +211,7 @@ const Dados = (function () {
         id: novoId(),
         nome: ex.nome,
         grupo: ex.grupo,
-        series: ex.series.map((s) => ({ id: novoId(), reps: s.reps, peso: s.peso, feita: false }))
+        series: ex.series.map((s) => novaSerie(s, ehCardio(ex)))
       }));
     }
 
@@ -185,12 +241,28 @@ const Dados = (function () {
     return null;
   }
 
-  /** Adiciona o exercício ao treino, já com as cargas da última vez. */
+  /** Cria uma série copiando os valores de uma anterior, quando houver.
+      No cardio o que se copia é o tempo; nos demais, o peso e as repetições. */
+  function novaSerie(anterior, cardio) {
+    const serie = { id: novoId(), reps: 0, peso: 0, feita: false };
+
+    if (cardio) {
+      serie.minutos = (anterior && minutosDaSerie(anterior)) || MINUTOS_PADRAO;
+    } else {
+      serie.reps = anterior ? anterior.reps : REPS_PADRAO;
+      serie.peso = anterior ? anterior.peso : 0;
+    }
+    return serie;
+  }
+
+  /** Adiciona o exercício ao treino, já com os valores da última vez
+      (a carga na musculação, o tempo no cardio). */
   function adicionarExercicio(treino, nome, grupo) {
+    const cardio = grupo === GRUPO_CARDIO;
     const anterior = ultimaExecucao(nome);
-    const series = anterior
-      ? anterior.series.map((s) => ({ id: novoId(), reps: s.reps, peso: s.peso, feita: false }))
-      : [{ id: novoId(), reps: 10, peso: 0, feita: false }];
+    const series = anterior && anterior.series.length
+      ? anterior.series.map((s) => novaSerie(s, cardio))
+      : [novaSerie(null, cardio)];
 
     const item = { id: novoId(), nome, grupo, series };
     treino.exercicios.push(item);
@@ -206,12 +278,7 @@ const Dados = (function () {
   /** Nova série copiando os valores da anterior (quase sempre é o que queremos). */
   function adicionarSerie(exercicio) {
     const ultima = exercicio.series[exercicio.series.length - 1];
-    const serie = {
-      id: novoId(),
-      reps: ultima ? ultima.reps : 10,
-      peso: ultima ? ultima.peso : 0,
-      feita: false
-    };
+    const serie = novaSerie(ultima, ehCardio(exercicio));
     exercicio.series.push(serie);
     salvar();
     return serie;
@@ -227,12 +294,25 @@ const Dados = (function () {
   const feitas = (exercicio) => exercicio.series.filter((s) => s.feita);
 
   /** Volume = soma de (peso × repetições) das séries concluídas.
-      É a medida mais comum de "quanto" você treinou. */
+      É a medida mais comum de "quanto" você treinou.
+      Cardio fica de fora: ele é medido em minutos. */
   function volumeExercicio(exercicio) {
+    if (ehCardio(exercicio)) return 0;
     return feitas(exercicio).reduce((total, s) => total + s.peso * s.reps, 0);
   }
 
+  /** Minutos concluídos de um exercício de cardio (0 nos de musculação). */
+  function minutosExercicio(exercicio) {
+    if (!ehCardio(exercicio)) return 0;
+    return feitas(exercicio).reduce((total, s) => total + minutosDaSerie(s), 0);
+  }
+
+  function minutosTreino(treino) {
+    return treino.exercicios.reduce((total, e) => total + minutosExercicio(e), 0);
+  }
+
   function maiorCarga(exercicio) {
+    if (ehCardio(exercicio)) return null;
     const pesos = feitas(exercicio).map((s) => s.peso);
     return pesos.length ? Math.max(...pesos) : null;
   }
@@ -247,7 +327,7 @@ const Dados = (function () {
 
   function repeticoesFeitas(treino) {
     return treino.exercicios.reduce(
-      (total, e) => total + feitas(e).reduce((soma, s) => soma + s.reps, 0), 0);
+      (total, e) => total + (ehCardio(e) ? 0 : feitas(e).reduce((soma, s) => soma + s.reps, 0)), 0);
   }
 
   function duracaoTreino(treino) {
@@ -264,15 +344,23 @@ const Dados = (function () {
     return Array.from(nomes).sort((a, b) => a.localeCompare(b, 'pt-BR'));
   }
 
-  /** Um ponto por treino em que o exercício apareceu — alimenta o gráfico. */
+  /** Um ponto por treino em que o exercício apareceu — alimenta o gráfico.
+      No cardio o que evolui é o tempo; nos demais, a carga e o volume. */
   function evolucao(nome) {
     return finalizados()
       .map((treino) => {
         const ex = treino.exercicios.find((e) => e.nome === nome);
         if (!ex) return null;
+
+        if (ehCardio(ex)) {
+          const minutos = minutosExercicio(ex);
+          if (!minutos) return null;
+          return { data: treino.inicio, carga: 0, volume: 0, minutos, cardio: true };
+        }
+
         const carga = maiorCarga(ex);
         if (carga === null) return null;
-        return { data: treino.inicio, carga, volume: volumeExercicio(ex) };
+        return { data: treino.inicio, carga, volume: volumeExercicio(ex), minutos: 0, cardio: false };
       })
       .filter(Boolean)
       .sort((a, b) => new Date(a.data) - new Date(b.data));
@@ -307,6 +395,7 @@ const Dados = (function () {
       if (!lido || !Array.isArray(lido.treinos) || !Array.isArray(lido.exercicios)) return false;
       estado = { versao: 1, exercicios: lido.exercicios, treinos: lido.treinos };
       salvar();
+      migrarCardioParaMinutos();
       return true;
     } catch (erro) {
       return false;
@@ -320,13 +409,15 @@ const Dados = (function () {
   }
 
   return {
-    GRUPOS, EMOJI_GRUPO,
+    GRUPOS, EMOJI_GRUPO, GRUPO_CARDIO,
     carregar, salvar, novoId,
+    ehCardio, ehCardioPorNome, minutosDaSerie,
     exercicios, criarExercicio, atualizarExercicio, apagarExercicio,
     treinos, treinoAtivo, finalizados, treinoPorId,
     iniciarTreino, finalizarTreino, apagarTreino,
     ultimaExecucao, adicionarExercicio, removerExercicio, adicionarSerie, removerSerie,
-    volumeExercicio, maiorCarga, volumeTreino, seriesFeitas, repeticoesFeitas, duracaoTreino,
+    volumeExercicio, minutosExercicio, minutosTreino, maiorCarga, volumeTreino,
+    seriesFeitas, repeticoesFeitas, duracaoTreino,
     nomesTreinados, evolucao, recordes,
     exportar, importar, apagarTudo
   };

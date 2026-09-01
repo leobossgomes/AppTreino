@@ -13,6 +13,7 @@ struct ProgressoView: View {
     enum Metrica: String, CaseIterable, Identifiable {
         case carga = "Carga máxima"
         case volume = "Volume"
+        case minutos = "Minutos"
         var id: String { rawValue }
     }
 
@@ -30,18 +31,48 @@ struct ProgressoView: View {
         exercicioSelecionado ?? nomesDeExercicios.first
     }
 
+    /// O exercício escolhido é de cardio? Aí o que evolui é o tempo,
+    /// e não a carga ou o volume.
+    private var cardioSelecionado: Bool {
+        guard let nomeAtual else { return false }
+        return finalizados.contains { treino in
+            treino.exercicios.contains { $0.nome == nomeAtual && $0.ehCardio }
+        }
+    }
+
+    private var metricasDisponiveis: [Metrica] {
+        cardioSelecionado ? [.minutos] : [.carga, .volume]
+    }
+
+    private var metricaAtual: Metrica {
+        metricasDisponiveis.contains(metrica) ? metrica : (metricasDisponiveis.first ?? .carga)
+    }
+
     /// Um ponto por treino em que o exercício selecionado apareceu.
     private var pontos: [PontoProgresso] {
         guard let nomeAtual else { return [] }
 
         return finalizados
             .compactMap { treino -> PontoProgresso? in
-                guard let exercicio = treino.exercicios.first(where: { $0.nome == nomeAtual }),
-                      let maior = exercicio.maiorCarga else { return nil }
+                guard let exercicio = treino.exercicios.first(where: { $0.nome == nomeAtual }) else { return nil }
+
+                if exercicio.ehCardio {
+                    let minutos = exercicio.minutosConcluidos
+                    guard minutos > 0 else { return nil }
+                    return PontoProgresso(
+                        data: treino.inicio,
+                        carga: 0,
+                        volume: 0,
+                        minutos: Double(minutos)
+                    )
+                }
+
+                guard let maior = exercicio.maiorCarga else { return nil }
                 return PontoProgresso(
                     data: treino.inicio,
                     carga: maior,
-                    volume: exercicio.volume
+                    volume: exercicio.volume,
+                    minutos: 0
                 )
             }
             .sorted { $0.data < $1.data }
@@ -120,7 +151,18 @@ struct ProgressoView: View {
                 valor: Formatadores.volume(finalizados.reduce(0) { $0 + $1.volumeTotal }),
                 icone: "scalemass"
             )
+            if totalMinutosCardio > 0 {
+                CartaoEstatistica(
+                    titulo: "Cardio",
+                    valor: Formatadores.minutos(totalMinutosCardio),
+                    icone: "heart.fill"
+                )
+            }
         }
+    }
+
+    private var totalMinutosCardio: Int {
+        finalizados.reduce(0) { $0 + $1.totalMinutosCardio }
     }
 
     @ViewBuilder
@@ -145,8 +187,8 @@ struct ProgressoView: View {
                 }
             }
 
-            Picker("Métrica", selection: $metrica) {
-                ForEach(Metrica.allCases) { item in
+            Picker("Métrica", selection: Binding(get: { metricaAtual }, set: { metrica = $0 })) {
+                ForEach(metricasDisponiveis) { item in
                     Text(item.rawValue).tag(item)
                 }
             }
@@ -161,14 +203,14 @@ struct ProgressoView: View {
                 Chart(pontos) { ponto in
                     LineMark(
                         x: .value("Data", ponto.data),
-                        y: .value(metrica.rawValue, valor(de: ponto))
+                        y: .value(metricaAtual.rawValue, valor(de: ponto))
                     )
                     .interpolationMethod(.catmullRom)
                     .lineStyle(StrokeStyle(lineWidth: 2.5))
 
                     PointMark(
                         x: .value("Data", ponto.data),
-                        y: .value(metrica.rawValue, valor(de: ponto))
+                        y: .value(metricaAtual.rawValue, valor(de: ponto))
                     )
                     .symbolSize(60)
                 }
@@ -213,9 +255,10 @@ struct ProgressoView: View {
     }
 
     private func valor(de ponto: PontoProgresso) -> Double {
-        switch metrica {
-        case .carga:  return ponto.carga
-        case .volume: return ponto.volume
+        switch metricaAtual {
+        case .carga:   return ponto.carga
+        case .volume:  return ponto.volume
+        case .minutos: return ponto.minutos
         }
     }
 }
@@ -226,6 +269,8 @@ struct PontoProgresso: Identifiable {
     let data: Date
     let carga: Double
     let volume: Double
+    /// Minutos concluídos — só é usado nos exercícios de cardio.
+    let minutos: Double
 }
 
 /// Maior carga já usada em um exercício.

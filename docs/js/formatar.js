@@ -25,6 +25,14 @@ const Formatar = {
     return h > 0 ? `${h}:${dois(m)}:${dois(s)}` : `${dois(m)}:${dois(s)}`;
   },
 
+  /** 25 -> "25 min"   |   90 -> "1h 30min" — usado no cardio */
+  minutos(valor) {
+    const total = Math.max(0, Math.round(Number(valor) || 0));
+    const h = Math.floor(total / 60);
+    const m = total % 60;
+    return h > 0 ? `${h}h ${String(m).padStart(2, '0')}min` : `${m} min`;
+  },
+
   /** milissegundos -> "1h 05min" ou "42min" */
   duracao(ms) {
     const total = Math.max(0, Math.floor(ms / 1000));

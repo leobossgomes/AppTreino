@@ -36,12 +36,27 @@ final class ExercicioDoTreino {
         series.filter(\.concluida).count
     }
 
+    /// Este exercício é de cardio? Aí ele é anotado em minutos, não em carga.
+    var ehCardio: Bool {
+        grupoMuscular == GrupoMuscular.cardio.rawValue
+    }
+
+    /// Volume = peso x repetições das séries concluídas.
+    /// Cardio fica de fora: ele é medido em minutos.
     var volume: Double {
-        series.filter(\.concluida).reduce(0) { $0 + $1.volume }
+        guard !ehCardio else { return 0 }
+        return series.filter(\.concluida).reduce(0) { $0 + $1.volume }
+    }
+
+    /// Minutos concluídos de um exercício de cardio (0 nos de musculação).
+    var minutosConcluidos: Int {
+        guard ehCardio else { return 0 }
+        return series.filter(\.concluida).reduce(0) { $0 + $1.minutos }
     }
 
     var maiorCarga: Double? {
-        series.filter(\.concluida).map(\.peso).max()
+        guard !ehCardio else { return nil }
+        return series.filter(\.concluida).map(\.peso).max()
     }
 
     /// Próximo número de ordem livre, para adicionar uma série nova no fim.

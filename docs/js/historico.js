@@ -68,10 +68,13 @@ const TelaHistorico = {
       }
 
       const duracao = Dados.duracaoTreino(treino);
+      const volume = Dados.volumeTreino(treino);
+      const minutos = Dados.minutosTreino(treino);
       const resumo = [
         Formatar.plural(treino.exercicios.length, 'exercício', 'exercícios'),
         Formatar.plural(Dados.seriesFeitas(treino), 'série', 'séries'),
-        Formatar.volume(Dados.volumeTreino(treino)),
+        volume > 0 ? Formatar.volume(volume) : null,
+        minutos > 0 ? Formatar.minutos(minutos) + ' de cardio' : null,
         duracao ? Formatar.duracao(duracao) : null
       ].filter(Boolean).join(' • ');
 
@@ -100,33 +103,45 @@ const TelaHistorico = {
 
     partes.push(UI.el('div', { class: 'secao-titulo', texto: Formatar.dataLonga(treino.inicio) }));
 
+    const minutosCardio = Dados.minutosTreino(treino);
+
     partes.push(UI.el('div', { class: 'grade-stats' }, [
       UI.stat('Exercícios', String(treino.exercicios.length)),
       UI.stat('Séries', String(Dados.seriesFeitas(treino))),
       UI.stat('Repetições', String(Dados.repeticoesFeitas(treino))),
-      UI.stat('Volume', Formatar.volume(Dados.volumeTreino(treino)))
-    ]));
+      UI.stat('Volume', Formatar.volume(Dados.volumeTreino(treino))),
+      minutosCardio > 0 ? UI.stat('Cardio', Formatar.minutos(minutosCardio)) : null
+    ].filter(Boolean)));
 
     if (duracao) {
       partes.push(UI.el('div', { class: 'secao-rodape', texto: 'Duração: ' + Formatar.duracao(duracao) }));
     }
 
     treino.exercicios.forEach((exercicio) => {
+      const cardio = Dados.ehCardio(exercicio);
       const carga = Dados.maiorCarga(exercicio);
+      const minutos = Dados.minutosExercicio(exercicio);
+
+      const destaque = cardio
+        ? (minutos > 0 ? Formatar.minutos(minutos) : null)
+        : (carga ? 'máx ' + Formatar.peso(carga) : null);
+
       partes.push(UI.el('div', { class: 'exercicio-topo' }, [
         UI.el('div', {}, [
           UI.el('span', { class: 'nome', texto: exercicio.nome }),
           exercicio.grupo ? UI.el('span', { class: 'grupo-musc', texto: exercicio.grupo }) : null
         ]),
-        carga ? UI.el('span', { class: 'item-valor', texto: 'máx ' + Formatar.peso(carga) }) : null
+        destaque ? UI.el('span', { class: 'item-valor', texto: destaque }) : null
       ]));
 
       partes.push(UI.el('div', { class: 'grupo' },
         exercicio.series.map((serie, indice) => UI.item({
           titulo: 'Série ' + (indice + 1),
-          valor: serie.feita
-            ? `${Formatar.peso(serie.peso)} × ${serie.reps}`
-            : 'não concluída',
+          valor: !serie.feita
+            ? 'não concluída'
+            : cardio
+              ? Formatar.minutos(Dados.minutosDaSerie(serie))
+              : `${Formatar.peso(serie.peso)} × ${serie.reps}`,
           estatico: true
         }))
       ));

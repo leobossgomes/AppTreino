@@ -282,6 +282,12 @@ input::placeholder, textarea::placeholder { color: var(--texto-3); }
   padding-top: 10px;
   padding-bottom: 6px;
 }
+/* No cardio só existe uma coluna para preencher: os minutos. */
+.linha-cabecalho.cardio,
+.linha-serie.cardio {
+  grid-template-columns: 42px 1fr 46px;
+}
+
 .linha-serie .num {
   font-weight: 600;
   color: var(--texto-2);
@@ -331,6 +337,9 @@ input::placeholder, textarea::placeholder { color: var(--texto-3); }
   padding: 13px 14px;
   box-shadow: var(--sombra);
 }
+/* Cartão sobrando numa grade de duas colunas ocupa a linha inteira. */
+.grade-stats > .stat:last-child:nth-child(odd) { grid-column: 1 / -1; }
+
 .stat .rotulo { font-size: 12px; color: var(--texto-2); text-transform: uppercase; letter-spacing: 0.3px; }
 .stat .valor {
   font-size: 22px;

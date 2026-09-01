@@ -30,6 +30,13 @@ struct DetalheTreinoView: View {
                         valor: Formatadores.volume(treino.volumeTotal),
                         icone: "scalemass"
                     )
+                    if treino.totalMinutosCardio > 0 {
+                        CartaoEstatistica(
+                            titulo: "Cardio",
+                            valor: Formatadores.minutos(treino.totalMinutosCardio),
+                            icone: "heart.fill"
+                        )
+                    }
                 }
                 .listRowInsets(EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
                 .listRowBackground(Color.clear)
@@ -54,7 +61,9 @@ struct DetalheTreinoView: View {
                             Text("Série \(indice + 1)")
                                 .foregroundStyle(.secondary)
                             Spacer()
-                            Text("\(Formatadores.peso(serie.peso)) × \(serie.repeticoes)")
+                            Text(exercicio.ehCardio
+                                 ? Formatadores.minutos(serie.minutos)
+                                 : "\(Formatadores.peso(serie.peso)) × \(serie.repeticoes)")
                                 .monospacedDigit()
                             if !serie.concluida {
                                 // Série que ficou anotada mas não foi marcada como feita.
@@ -69,7 +78,11 @@ struct DetalheTreinoView: View {
                     HStack {
                         Text(exercicio.nome).textCase(nil)
                         Spacer()
-                        if let maior = exercicio.maiorCarga, maior > 0 {
+                        if exercicio.minutosConcluidos > 0 {
+                            Text(Formatadores.minutos(exercicio.minutosConcluidos))
+                                .textCase(nil)
+                                .foregroundStyle(.secondary)
+                        } else if let maior = exercicio.maiorCarga, maior > 0 {
                             Text("máx \(Formatadores.peso(maior))")
                                 .textCase(nil)
                                 .foregroundStyle(.secondary)

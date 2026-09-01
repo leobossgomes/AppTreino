@@ -16,6 +16,17 @@ enum Formatadores {
         return "\(numero) kg"
     }
 
+    /// 25 -> "25 min"   |   90 -> "1h 30min" — usado no cardio
+    static func minutos(_ valor: Int) -> String {
+        let total = max(0, valor)
+        let horas = total / 60
+        let restantes = total % 60
+        if horas > 0 {
+            return String(format: "%dh %02dmin", horas, restantes)
+        }
+        return "\(total) min"
+    }
+
     /// 3900 segundos -> "1h 05min"
     static func duracao(_ segundos: TimeInterval) -> String {
         let total = Int(segundos)

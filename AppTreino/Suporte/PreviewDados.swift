@@ -52,6 +52,9 @@ enum PreviewDados {
             adicionar(nome: "Tríceps na polia", grupo: "Tríceps", ordem: 1,
                       repeticoes: 12, peso: 30,
                       em: treino, contexto: contexto)
+            adicionar(nome: "Esteira", grupo: "Cardio", ordem: 2,
+                      repeticoes: 0, peso: 0, minutos: 20 + semana * 5,
+                      em: treino, contexto: contexto)
         }
 
         if comTreinoEmAndamento {
@@ -71,6 +74,7 @@ enum PreviewDados {
                                   ordem: Int,
                                   repeticoes: Int,
                                   peso: Double,
+                                  minutos: Int = 0,
                                   concluida: Bool = true,
                                   em treino: Treino,
                                   contexto: ModelContext) {
@@ -78,8 +82,15 @@ enum PreviewDados {
         exercicio.treino = treino
         contexto.insert(exercicio)
 
-        for indice in 0..<3 {
-            let serie = Serie(ordem: indice, repeticoes: repeticoes, peso: peso, concluida: concluida)
+        // O cardio é um bloco de minutos só; a musculação, três séries.
+        let quantidade = minutos > 0 ? 1 : 3
+
+        for indice in 0..<quantidade {
+            let serie = Serie(ordem: indice,
+                              repeticoes: repeticoes,
+                              peso: peso,
+                              minutos: minutos,
+                              concluida: concluida)
             serie.exercicio = exercicio
             contexto.insert(serie)
         }
