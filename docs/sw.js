@@ -2,7 +2,7 @@
    Ao mudar qualquer arquivo, aumente o número da VERSAO para forçar a
    atualização nos celulares que já instalaram o app. */
 
-const VERSAO = 'apptreino-v1';
+const VERSAO = 'apptreino-v2';
 
 const ARQUIVOS = [
   './',

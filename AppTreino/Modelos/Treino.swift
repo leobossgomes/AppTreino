@@ -43,11 +43,17 @@ final class Treino {
         exercicios.reduce(0) { $0 + $1.series.filter(\.concluida).count }
     }
 
-    /// Total de repetições concluídas.
+    /// Total de repetições concluídas (o cardio não entra: ele conta em minutos).
     var totalRepeticoes: Int {
         exercicios.reduce(0) { parcial, exercicio in
-            parcial + exercicio.series.filter(\.concluida).reduce(0) { $0 + $1.repeticoes }
+            guard !exercicio.ehCardio else { return parcial }
+            return parcial + exercicio.series.filter(\.concluida).reduce(0) { $0 + $1.repeticoes }
         }
+    }
+
+    /// Minutos de cardio concluídos no treino inteiro.
+    var totalMinutosCardio: Int {
+        exercicios.reduce(0) { $0 + $1.minutosConcluidos }
     }
 
     /// Volume = soma de (peso x repetições) de todas as séries concluídas.

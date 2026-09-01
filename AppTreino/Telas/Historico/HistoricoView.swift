@@ -96,7 +96,12 @@ struct LinhaTreino: View {
             HStack(spacing: 16) {
                 Label("\(treino.totalExercicios)", systemImage: "dumbbell")
                 Label("\(treino.totalSeriesConcluidas)", systemImage: "repeat")
-                Label(Formatadores.volume(treino.volumeTotal), systemImage: "scalemass")
+                if treino.volumeTotal > 0 {
+                    Label(Formatadores.volume(treino.volumeTotal), systemImage: "scalemass")
+                }
+                if treino.totalMinutosCardio > 0 {
+                    Label(Formatadores.minutos(treino.totalMinutosCardio), systemImage: "heart.fill")
+                }
                 if let duracao = treino.duracao {
                     Label(Formatadores.duracao(duracao), systemImage: "clock")
                 }

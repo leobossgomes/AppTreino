@@ -99,6 +99,18 @@ struct TreinoEmAndamentoView: View {
                         .monospacedDigit()
                 }
             }
+
+            if treino.totalMinutosCardio > 0 {
+                HStack {
+                    Text("Cardio até agora")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text(Formatadores.minutos(treino.totalMinutosCardio))
+                        .font(.footnote.weight(.semibold))
+                        .monospacedDigit()
+                }
+            }
         }
     }
 
@@ -113,22 +125,21 @@ struct TreinoEmAndamentoView: View {
         novo.treino = treino
         contexto.insert(novo)
 
-        // Já cria as séries com a carga da última vez que você fez esse exercício.
-        if let anterior = HistoricoUtil.ultimaExecucao(nome: nome, contexto: contexto) {
-            for (indice, serieAntiga) in anterior.seriesOrdenadas.enumerated() {
-                let serie = Serie(
-                    ordem: indice,
-                    repeticoes: serieAntiga.repeticoes,
-                    peso: serieAntiga.peso,
-                    concluida: false
-                )
+        // Já cria as séries com os valores da última vez que você fez esse
+        // exercício: a carga na musculação, o tempo no cardio.
+        let cardio = novo.ehCardio
+        let anteriores = HistoricoUtil.ultimaExecucao(nome: nome, contexto: contexto)?.seriesOrdenadas ?? []
+
+        if anteriores.isEmpty {
+            let serie = Serie.nova(ordem: 0, copiando: nil, cardio: cardio)
+            serie.exercicio = novo
+            contexto.insert(serie)
+        } else {
+            for (indice, serieAntiga) in anteriores.enumerated() {
+                let serie = Serie.nova(ordem: indice, copiando: serieAntiga, cardio: cardio)
                 serie.exercicio = novo
                 contexto.insert(serie)
             }
-        } else {
-            let serie = Serie(ordem: 0, repeticoes: 10, peso: 0, concluida: false)
-            serie.exercicio = novo
-            contexto.insert(serie)
         }
 
         try? contexto.save()

@@ -3,7 +3,7 @@
 const TelaProgresso = {
 
   exercicioSelecionado: null,
-  metrica: 'carga',   // 'carga' ou 'volume'
+  metrica: 'carga',   // 'carga', 'volume' ou 'minutos' (só no cardio)
 
   titulo() { return 'Progresso'; },
 
@@ -26,14 +26,16 @@ const TelaProgresso = {
 
     const totalSeries = treinos.reduce((s, t) => s + Dados.seriesFeitas(t), 0);
     const totalVolume = treinos.reduce((s, t) => s + Dados.volumeTreino(t), 0);
+    const totalCardio = treinos.reduce((s, t) => s + Dados.minutosTreino(t), 0);
 
     return UI.grupoDeElementos([
       UI.el('div', { class: 'grade-stats' }, [
         UI.stat('Treinos', String(treinos.length)),
         UI.stat('Neste mês', String(noMes)),
         UI.stat('Séries feitas', String(totalSeries)),
-        UI.stat('Volume total', Formatar.volume(totalVolume))
-      ]),
+        UI.stat('Volume total', Formatar.volume(totalVolume)),
+        totalCardio > 0 ? UI.stat('Cardio', Formatar.minutos(totalCardio)) : null
+      ].filter(Boolean)),
 
       UI.tituloSecao('Evolução'),
       this.painelGrafico(),
@@ -61,17 +63,24 @@ const TelaProgresso = {
       this.exercicioSelecionado = nomes[0];
     }
 
+    // No cardio não existe carga nem volume: o que evolui é o tempo.
+    const cardio = Dados.ehCardioPorNome(this.exercicioSelecionado);
+    if (cardio) this.metrica = 'minutos';
+    else if (this.metrica === 'minutos') this.metrica = 'carga';
+
     const seletor = UI.el('select', {
       onchange: (e) => { this.exercicioSelecionado = e.target.value; App.renderConteudo(); }
     }, nomes.map((n) => UI.el('option', { value: n, selected: n === this.exercicioSelecionado }, n)));
 
-    const segmentado = UI.el('div', { class: 'segmentado' }, [
-      ['carga', 'Carga máxima'],
-      ['volume', 'Volume']
-    ].map(([chave, rotulo]) => UI.el('button', {
-      class: this.metrica === chave ? 'ativo' : '',
-      onclick: () => { this.metrica = chave; App.renderConteudo(); }
-    }, rotulo)));
+    const opcoes = cardio
+      ? [['minutos', 'Minutos']]
+      : [['carga', 'Carga máxima'], ['volume', 'Volume']];
+
+    const segmentado = UI.el('div', { class: 'segmentado' },
+      opcoes.map(([chave, rotulo]) => UI.el('button', {
+        class: this.metrica === chave ? 'ativo' : '',
+        onclick: () => { this.metrica = chave; App.renderConteudo(); }
+      }, rotulo)));
 
     const pontos = Dados.evolucao(this.exercicioSelecionado);
 
@@ -93,7 +102,10 @@ const TelaProgresso = {
   /** Desenha o gráfico de linha em SVG, sem depender de nenhuma biblioteca. */
   svgGrafico(pontos) {
     const L = 320, A = 180, mE = 42, mD = 10, mT = 12, mB = 22;
-    const valores = pontos.map((p) => (this.metrica === 'carga' ? p.carga : p.volume));
+    const valores = pontos.map((p) => {
+      if (this.metrica === 'minutos') return p.minutos;
+      return this.metrica === 'carga' ? p.carga : p.volume;
+    });
 
     let min = Math.min(...valores);
     let max = Math.max(...valores);
@@ -117,6 +129,8 @@ const TelaProgresso = {
       ? v.toLocaleString('pt-BR', { maximumFractionDigits: 1 })
       : Math.round(v).toLocaleString('pt-BR'));
 
+    const rotuloMetrica = this.metrica === 'minutos' ? ' (minutos)' : '';
+
     const rotulosY = [max, (max + min) / 2, min].map((v, i) => {
       const py = mT + ((A - mT - mB) * i) / 2;
       return `<line class="eixo" x1="${mE}" y1="${py.toFixed(1)}" x2="${L - mD}" y2="${py.toFixed(1)}"/>`
@@ -129,7 +143,7 @@ const TelaProgresso = {
       `<text class="rotulo" x="${mE}" y="${A - 4}" text-anchor="start">${primeiro}</text>`
       + `<text class="rotulo" x="${L - mD}" y="${A - 4}" text-anchor="end">${ultimo}</text>`;
 
-    return `<svg class="grafico" viewBox="0 0 ${L} ${A}" role="img" aria-label="Gráfico de evolução">
+    return `<svg class="grafico" viewBox="0 0 ${L} ${A}" role="img" aria-label="Gráfico de evolução${rotuloMetrica}">
       ${rotulosY}${rotulosX}
       <path class="linha" d="${caminho}"/>
       ${bolinhas}

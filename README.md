@@ -18,15 +18,21 @@ As duas fazem exatamente as mesmas coisas. Se você está no Windows, use a vers
 
 | Aba | Para que serve |
 |---|---|
-| **Treinar** | Começa um treino e você vai anotando série por série (peso + repetições). Tem cronômetro e botão de "repetir o último treino". |
+| **Treinar** | Começa um treino e você vai anotando série por série (peso + repetições). Os exercícios do grupo **Cardio** são anotados em **minutos**. Tem cronômetro e botão de "repetir o último treino". |
 | **Histórico** | Todos os treinos finalizados, agrupados por mês, com busca. Toque em um para ver tudo o que foi feito naquele dia. |
 | **Exercícios** | Seu catálogo pessoal (já vem com 20 cadastrados). Você pode adicionar, editar e apagar. |
 | **Progresso** | Números gerais, gráfico de evolução por exercício, recordes de carga e backup dos dados. |
 
 Detalhes que ajudam no dia a dia:
 
-- Ao adicionar um exercício, o app **já preenche o peso e as repetições da última vez** que você o fez.
+- Ao adicionar um exercício, o app **já preenche o peso e as repetições da última vez** que você o fez
+  (no cardio, o **tempo** da última vez).
 - Ao adicionar uma série, ela **copia os valores da série anterior**.
+- **Cardio é em minutos:** esteira, bicicleta e companhia não pedem peso nem repetições — só quanto
+  tempo você ficou lá. Basta o exercício estar no grupo **Cardio** (na aba Exercícios você escolhe o
+  grupo de cada um). Os minutos aparecem no resumo do treino, no histórico e na aba Progresso.
+- A tela **não volta mais para o topo** quando você marca uma série como feita ou adiciona um
+  exercício — você continua exatamente onde estava.
 - O **volume** (peso × repetições somado) é calculado sozinho — é a medida mais comum de quanto você treinou.
 - Funciona **offline**, no avião, no subsolo da academia. Não precisa de internet depois de instalado.
 
@@ -122,7 +128,8 @@ docs/
 | Mudar a cor principal do app | `css/estilo.css`, a variável `--azul` (lá no topo) |
 | Mudar os exercícios que já vêm cadastrados | `js/dados.js`, a lista `EXERCICIOS_PADRAO` |
 | Adicionar um grupo muscular novo | `js/dados.js`, as listas `GRUPOS` e `EMOJI_GRUPO` |
-| Mudar as repetições padrão de 10 para outro número | `js/dados.js`, função `adicionarSerie` |
+| Mudar as repetições padrão de 10 para outro número | `js/dados.js`, a constante `REPS_PADRAO` |
+| Mudar o tempo padrão do cardio (20 minutos) | `js/dados.js`, a constante `MINUTOS_PADRAO` |
 | Trocar o texto de alguma tela | Busque o texto na pasta `js/` (no VS Code: `Ctrl + Shift + F`) |
 
 ### Ideias para evoluir
