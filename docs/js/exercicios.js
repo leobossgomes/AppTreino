@@ -42,6 +42,7 @@ const TelaExercicios = {
       partes.push(UI.el('div', { class: 'grupo' }, doGrupo.map((e) => UI.item({
         titulo: e.nome,
         sub: e.obs || null,
+        valor: Demos.tem(e.nome) ? '🎬' : null,
         seta: true,
         aoTocar: () => this.editar(e)
       }))));
@@ -89,6 +90,13 @@ const TelaExercicios = {
     const acoes = [
       UI.el('button', { class: 'botao primario', onclick: salvar }, 'Salvar')
     ];
+
+    if (exercicio && Demos.tem(exercicio.nome)) {
+      acoes.push(UI.el('button', {
+        class: 'botao',
+        onclick: () => { UI.fecharModal(); UI.demonstracao(exercicio.nome); }
+      }, '🎬  Ver como fazer'));
+    }
 
     if (exercicio) {
       acoes.push(UI.el('button', {

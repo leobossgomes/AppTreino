@@ -15,16 +15,22 @@ const TelaTreinar = {
 
   comecar() {
     const ultimo = Dados.finalizados()[0];
+    const doPlano = PLANO.doDia(new Date().getDay());
 
     return UI.grupoDeElementos([
       UI.vazio('🏋️', 'Bora treinar?',
         'Comece um treino e vá anotando as séries, as repetições e o peso de cada exercício.'),
 
       UI.el('div', { class: 'blocos' }, [
-        UI.el('button', {
+        doPlano ? UI.el('button', {
           class: 'botao primario',
+          onclick: () => { Dados.iniciarTreinoDoPlano(doPlano); App.render(); }
+        }, `Treino de hoje: ${doPlano.nome}`) : null,
+
+        UI.el('button', {
+          class: 'botao' + (doPlano ? '' : ' primario'),
           onclick: () => { Dados.iniciarTreino(); App.render(); }
-        }, 'Iniciar treino'),
+        }, doPlano ? 'Iniciar treino em branco' : 'Iniciar treino'),
 
         ultimo ? UI.el('button', {
           class: 'botao',
@@ -195,12 +201,20 @@ const TelaTreinar = {
       UI.el('div', { class: 'exercicio-topo' }, [
         UI.el('div', {}, [
           UI.el('span', { class: 'nome', texto: exercicio.nome }),
-          exercicio.grupo ? UI.el('span', { class: 'grupo-musc', texto: exercicio.grupo }) : null
+          exercicio.grupo ? UI.el('span', { class: 'grupo-musc', texto: exercicio.grupo }) : null,
+          exercicio.meta ? UI.el('span', { class: 'meta-plano',
+            texto: `Meta: ${exercicio.meta.series} × ${exercicio.meta.reps} • descanso ${exercicio.meta.descanso}` }) : null
         ]),
-        UI.el('button', {
-          'aria-label': 'Opções do exercício',
-          onclick: () => this.menuExercicio(treino, exercicio)
-        }, '⋯')
+        UI.el('div', { class: 'topo-botoes' }, [
+          Demos.tem(exercicio.nome) ? UI.el('button', {
+            'aria-label': 'Ver como fazer ' + exercicio.nome,
+            onclick: () => UI.demonstracao(exercicio.nome, exercicio.meta)
+          }, '🎬') : null,
+          UI.el('button', {
+            'aria-label': 'Opções do exercício',
+            onclick: () => this.menuExercicio(treino, exercicio)
+          }, '⋯')
+        ])
       ]),
       UI.el('div', { class: 'grupo' }, linhas),
       rodape ? UI.el('div', { class: 'secao-rodape', texto: rodape }) : null
@@ -216,6 +230,13 @@ const TelaTreinar = {
         aoTocar: () => { Dados.adicionarSerie(exercicio); App.renderNoLugar(); }
       }
     ];
+
+    if (Demos.tem(exercicio.nome)) {
+      acoes.unshift({
+        texto: 'Ver como fazer',
+        aoTocar: () => UI.demonstracao(exercicio.nome, exercicio.meta)
+      });
+    }
 
     if (exercicio.series.length > 1) {
       acoes.push({

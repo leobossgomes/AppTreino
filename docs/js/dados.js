@@ -9,9 +9,12 @@
      exercicios: [ { id, nome, grupo, obs } ],
      treinos: [
        { id, nome, inicio, fim, notas,
-         exercicios: [ { id, nome, grupo, series: [ { id, reps, peso, feita } ] } ] }
+         exercicios: [ { id, nome, grupo, meta?, series: [ { id, reps, peso, feita } ] } ] }
      ]
    }
+
+   `meta` ({ series, reps, descanso }) só existe nos treinos criados a partir
+   do plano (aba Plano) e serve para mostrar a meta do exercício na tela.
 
    Nos exercícios do grupo "Cardio" a série guarda `minutos` no lugar de
    peso e repetições — esteira e bicicleta se medem em tempo, não em carga.
@@ -88,8 +91,25 @@ const Dados = (function () {
       salvar();
     }
 
+    garantirExerciciosDoPlano();
     migrarCardioParaMinutos();
     return estado;
+  }
+
+  /** Cadastra no catálogo os exercícios do plano que ainda não existem.
+      Roda uma vez por versão do plano; o que você apagou depois não volta. */
+  function garantirExerciciosDoPlano() {
+    if ((estado.planoVersao || 0) >= PLANO.versao) return;
+
+    const existentes = new Set(estado.exercicios.map((e) => e.nome.toLowerCase()));
+    PLANO.dias.forEach((dia) => dia.exercicios.forEach((ex) => {
+      if (existentes.has(ex.nome.toLowerCase())) return;
+      existentes.add(ex.nome.toLowerCase());
+      estado.exercicios.push({ id: novoId(), nome: ex.nome, grupo: ex.grupo, obs: '' });
+    }));
+
+    estado.planoVersao = PLANO.versao;
+    salvar();
   }
 
   function salvar() {
@@ -211,9 +231,52 @@ const Dados = (function () {
         id: novoId(),
         nome: ex.nome,
         grupo: ex.grupo,
+        meta: ex.meta || null,
         series: ex.series.map((s) => novaSerie(s, ehCardio(ex)))
       }));
     }
+
+    estado.treinos.push(treino);
+    salvar();
+    return treino;
+  }
+
+  /** Cria um treino a partir de um dia do plano: já vem com todos os exercícios
+      e o número de séries do plano, com a carga da última vez que você fez cada
+      um. Sem histórico, as repetições começam no mínimo da faixa do plano. */
+  function iniciarTreinoDoPlano(dia) {
+    const treino = {
+      id: novoId(),
+      nome: dia.nome,
+      inicio: new Date().toISOString(),
+      fim: null,
+      notas: '',
+      exercicios: []
+    };
+
+    dia.exercicios.forEach((item) => {
+      const cardio = item.grupo === GRUPO_CARDIO;
+      const anterior = ultimaExecucao(item.nome);
+      const repsInicial = parseInt(item.reps, 10) || REPS_PADRAO;
+      const series = [];
+
+      for (let i = 0; i < item.series; i++) {
+        const base = anterior && anterior.series.length
+          ? (anterior.series[i] || anterior.series[anterior.series.length - 1])
+          : null;
+        const serie = novaSerie(base, cardio);
+        if (!base && !cardio) serie.reps = repsInicial;
+        series.push(serie);
+      }
+
+      treino.exercicios.push({
+        id: novoId(),
+        nome: item.nome,
+        grupo: item.grupo,
+        series,
+        meta: { series: item.series, reps: item.reps, descanso: item.descanso }
+      });
+    });
 
     estado.treinos.push(treino);
     salvar();
@@ -393,8 +456,9 @@ const Dados = (function () {
     try {
       const lido = JSON.parse(texto);
       if (!lido || !Array.isArray(lido.treinos) || !Array.isArray(lido.exercicios)) return false;
-      estado = { versao: 1, exercicios: lido.exercicios, treinos: lido.treinos };
+      estado = { versao: 1, exercicios: lido.exercicios, treinos: lido.treinos, planoVersao: lido.planoVersao };
       salvar();
+      garantirExerciciosDoPlano();
       migrarCardioParaMinutos();
       return true;
     } catch (erro) {
@@ -414,7 +478,7 @@ const Dados = (function () {
     ehCardio, ehCardioPorNome, minutosDaSerie,
     exercicios, criarExercicio, atualizarExercicio, apagarExercicio,
     treinos, treinoAtivo, finalizados, treinoPorId,
-    iniciarTreino, finalizarTreino, apagarTreino,
+    iniciarTreino, iniciarTreinoDoPlano, finalizarTreino, apagarTreino,
     ultimaExecucao, adicionarExercicio, removerExercicio, adicionarSerie, removerSerie,
     volumeExercicio, minutosExercicio, minutosTreino, maiorCarga, volumeTreino,
     seriesFeitas, repeticoesFeitas, duracaoTreino,

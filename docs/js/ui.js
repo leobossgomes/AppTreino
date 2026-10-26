@@ -133,8 +133,41 @@ const UI = (function () {
     ]);
   }
 
+  /** Janela com a demonstração animada de um exercício e as instruções.
+      `meta` (opcional) é a meta do plano: { series, reps, descanso }. */
+  function demonstracao(nome, meta) {
+    const def = Demos.definicao(nome);
+    if (!def) {
+      abrirModal([
+        el('h2', { texto: nome }),
+        el('p', { class: 'aviso', texto: 'Ainda não tenho uma demonstração para este exercício.' }),
+        el('div', { class: 'acoes' }, [el('button', { class: 'botao', onclick: fecharModal }, 'Fechar')])
+      ]);
+      return;
+    }
+
+    const lista = (tag, itens) => el(tag, { class: 'demo-lista' }, itens.map((t) => el('li', { texto: t })));
+
+    abrirModal([
+      el('h2', { texto: nome }),
+      def.musculos ? el('p', { class: 'aviso', texto: def.musculos }) : null,
+      Demos.criar(nome),
+      meta ? el('div', { class: 'demo-meta' }, [
+        el('span', { texto: meta.series + ' × ' + meta.reps }),
+        el('span', { texto: 'descanso ' + meta.descanso })
+      ]) : null,
+      el('h3', { class: 'demo-titulo', texto: 'Como fazer' }),
+      lista('ol', def.passos),
+      def.dicas && def.dicas.length ? el('h3', { class: 'demo-titulo', texto: 'Dicas' }) : null,
+      def.dicas && def.dicas.length ? lista('ul', def.dicas) : null,
+      def.erros ? el('h3', { class: 'demo-titulo', texto: 'Erro comum' }) : null,
+      def.erros ? el('p', { class: 'demo-texto', texto: def.erros }) : null,
+      el('div', { class: 'acoes' }, [el('button', { class: 'botao', onclick: fecharModal }, 'Fechar')])
+    ]);
+  }
+
   return {
     el, grupoDeElementos, tituloSecao, item, vazio, stat,
-    abrirModal, fecharModal, confirmar, menu
+    abrirModal, fecharModal, confirmar, menu, demonstracao
   };
 })();

@@ -2,7 +2,7 @@
    Ao mudar qualquer arquivo, aumente o número da VERSAO para forçar a
    atualização nos celulares que já instalaram o app. */
 
-const VERSAO = 'apptreino-v2';
+const VERSAO = 'apptreino-v3';
 
 const ARQUIVOS = [
   './',
@@ -10,8 +10,12 @@ const ARQUIVOS = [
   './manifest.webmanifest',
   './css/estilo.css',
   './js/formatar.js',
+  './js/plano-dados.js',
   './js/dados.js',
+  './js/demos.js',
+  './js/demos-dados.js',
   './js/ui.js',
+  './js/plano.js',
   './js/treinar.js',
   './js/historico.js',
   './js/exercicios.js',

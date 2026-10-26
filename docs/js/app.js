@@ -6,6 +6,7 @@ const App = {
   timer: null,
 
   telas: {
+    plano: TelaPlano,
     treinar: TelaTreinar,
     historico: TelaHistorico,
     exercicios: TelaExercicios,
@@ -13,6 +14,7 @@ const App = {
   },
 
   abas: [
+    ['plano', '🗓️', 'Plano'],
     ['treinar', '🏋️', 'Treinar'],
     ['historico', '📅', 'Histórico'],
     ['exercicios', '📋', 'Exercícios'],
@@ -55,6 +57,7 @@ const App = {
   irPara(aba) {
     this.aba = aba;
     if (aba === 'historico') TelaHistorico.detalheId = null;
+    if (aba === 'plano') TelaPlano.diaAberto = null;
     this.render();
   },
 

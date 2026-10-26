@@ -18,6 +18,7 @@ As duas fazem exatamente as mesmas coisas. Se você está no Windows, use a vers
 
 | Aba | Para que serve |
 |---|---|
+| **Plano** | O cronograma de segunda a sexta (Upper A, Lower A, Push, Pull, Legs). Toque em um dia para ver os exercícios, as séries, as repetições e o descanso; toque em um exercício para ver a **demonstração animada** e como fazer. O botão **Começar** já monta o treino do dia, com a carga da última vez. |
 | **Treinar** | Começa um treino e você vai anotando série por série (peso + repetições). Os exercícios do grupo **Cardio** são anotados em **minutos**. Tem cronômetro e botão de "repetir o último treino". |
 | **Histórico** | Todos os treinos finalizados, agrupados por mês, com busca. Toque em um para ver tudo o que foi feito naquele dia. |
 | **Exercícios** | Seu catálogo pessoal (já vem com 20 cadastrados). Você pode adicionar, editar e apagar. |
@@ -112,8 +113,12 @@ docs/
 ├── icones/             ← o ícone do halter
 └── js/
     ├── formatar.js     ← deixa números e datas bonitos ("82,5 kg", "1h 05min")
+    ├── plano-dados.js  ← o cronograma da semana (dias, exercícios, séries, descanso)
     ├── dados.js        ← onde os treinos são guardados e as contas são feitas
+    ├── demos.js        ← desenha as demonstrações animadas (bonequinho em SVG)
+    ├── demos-dados.js  ← poses e instruções de cada exercício
     ├── ui.js           ← peças de tela reaproveitadas (listas, botões, janelas)
+    ├── plano.js        ← aba Plano (semana, dia e botão de começar)
     ├── treinar.js      ← tela do treino em andamento
     ├── historico.js    ← lista e detalhe dos treinos passados
     ├── exercicios.js   ← catálogo de exercícios
@@ -127,6 +132,8 @@ docs/
 |---|---|
 | Mudar a cor principal do app | `css/estilo.css`, a variável `--azul` (lá no topo) |
 | Mudar os exercícios que já vêm cadastrados | `js/dados.js`, a lista `EXERCICIOS_PADRAO` |
+| Mudar séries, repetições ou descanso do plano | `js/plano-dados.js` (aumente `versao` se incluir exercícios novos) |
+| Ajustar a demonstração de um exercício | `js/demos-dados.js`: poses (`frames`) e textos |
 | Adicionar um grupo muscular novo | `js/dados.js`, as listas `GRUPOS` e `EMOJI_GRUPO` |
 | Mudar as repetições padrão de 10 para outro número | `js/dados.js`, a constante `REPS_PADRAO` |
 | Mudar o tempo padrão do cardio (20 minutos) | `js/dados.js`, a constante `MINUTOS_PADRAO` |
