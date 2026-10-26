@@ -412,6 +412,75 @@ input::placeholder, textarea::placeholder { color: var(--texto-3); }
 .vazio h2 { font-size: 19px; color: var(--texto); margin: 0 0 6px; }
 .vazio p { margin: 0; font-size: 15px; }
 
+/* ---------- Plano e demonstrações ---------- */
+
+.plano-resumo {
+  margin: 14px 16px 0;
+  padding: 14px 16px;
+  background: var(--cartao);
+  border-radius: 12px;
+  box-shadow: var(--sombra);
+  display: grid;
+  gap: 2px;
+}
+.plano-resumo span { font-size: 14px; color: var(--texto-2); }
+
+.exercicio-topo .topo-botoes { display: flex; align-items: center; flex: none; }
+.exercicio-topo .meta-plano {
+  font-size: 13px;
+  color: var(--azul);
+  display: block;
+  margin-top: 1px;
+}
+
+.demo-caixa {
+  position: relative;
+  margin: 10px 0 4px;
+  background: var(--cartao-2);
+  border-radius: 12px;
+  padding: 6px 6px 0;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.demo-caixa svg { display: block; width: 100%; height: auto; max-height: 260px; }
+.demo-legenda {
+  min-height: 38px;
+  padding: 2px 12px 22px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+}
+.demo-pausa {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 6px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--texto-3);
+}
+.demo-meta {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  margin: 6px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--azul);
+}
+.demo-titulo {
+  margin: 16px 0 4px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--texto-2);
+}
+.demo-lista { margin: 0; padding-left: 20px; font-size: 15px; }
+.demo-lista li { margin: 0 0 6px; }
+.demo-texto { margin: 0; font-size: 15px; }
+
 /* ---------- Barra de abas ---------- */
 
 .abas {
@@ -421,7 +490,7 @@ input::placeholder, textarea::placeholder { color: var(--texto-3); }
   bottom: 0;
   z-index: 30;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   background: var(--barra);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
